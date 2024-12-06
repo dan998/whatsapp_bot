@@ -1,0 +1,449 @@
+<html><head><base href="." /><title>WhatsApp Web Bot</title><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background: #111b21;
+    color: #e9edef;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.qr-container {
+    background: #222e35;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    margin: 20px 0;
+}
+
+#qrcode {
+    margin: 20px auto;
+    padding: 20px;
+    background: white;
+    border-radius: 10px;
+    width: fit-content;
+}
+
+.status {
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 5px;
+    background: #222e35;
+}
+
+.controls {
+    display: flex;
+    gap: 10px;
+    margin: 20px 0;
+}
+
+button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    background: #00a884;
+    color: white;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+button:hover {
+    background: #008068;
+}
+
+.message-form {
+    background: #222e35;
+    padding: 20px;
+    border-radius: 10px;
+    margin: 20px 0;
+}
+
+input, textarea {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border: none;
+    border-radius: 5px;
+    background: #2a3942;
+    color: #e9edef;
+}
+
+.chat-log {
+    background: #222e35;
+    padding: 20px;
+    border-radius: 10px;
+    height: 300px;
+    overflow-y: auto;
+    margin: 20px 0;
+}
+
+.message {
+    padding: 10px;
+    margin: 5px 0;
+    border-radius: 5px;
+    background: #2a3942;
+}
+
+.hosting-guide {
+    background: #222e35;
+    padding: 20px;
+    border-radius: 10px;
+    margin: 20px 0;
+    line-height: 1.6;
+}
+
+.hosting-guide code {
+    background: #2a3942;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+}
+
+.hosting-guide h3 {
+    color: #00a884;
+    margin: 15px 0 10px;
+}
+
+.hosting-guide ul {
+    margin-left: 20px;
+}
+
+.hosting-guide li {
+    margin: 5px 0;
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.0/build/qrcode.min.js"></script></head><body>
+<div class="container">
+    <h1>WhatsApp Web Bot</h1>
+    <div class="qr-container">
+        <h2>Scan QR Code to Connect</h2>
+        <div id="qrcode"></div>
+    </div>
+    
+    <div class="status" id="status">Status: Disconnected</div>
+    
+    <div class="controls">
+        <button onclick="startBot()">Start Bot</button>
+        <button onclick="stopBot()">Stop Bot</button>
+    </div>
+    
+    <div class="message-form">
+        <h2>Send Message</h2>
+        <input type="text" id="phone" placeholder="Phone number (with country code)">
+        <textarea id="message" placeholder="Message"></textarea>
+        <button onclick="sendMessage()">Send Message</button>
+    </div>
+    
+    <div class="chat-log" id="chatLog">
+        <!-- Messages will appear here -->
+    </div>
+
+    <!-- Updated Installation and Hosting Instructions for Vercel -->
+    <div class="hosting-guide">
+        <h2>Complete Setup Guide with Vercel Hosting</h2>
+
+        <h3>Frontend Deployment (Vercel)</h3>
+        <ol>
+            <li>Create a new GitHub repository and push your frontend code</li>
+            <li>Sign up at <a href="https://vercel.com">vercel.com</a></li>
+            <li>Import your GitHub repository in Vercel</li>
+            <li>Deploy with default settings for frontend</li>
+        </ol>
+
+        <h3>Backend Deployment (Vercel)</h3>
+        <ol>
+            <li>Create a new directory for your backend</li>
+            <li>Create vercel.json in root:</li>
+        </ol>
+        <pre>
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "server.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "server.js"
+    }
+  ]
+}
+        </pre>
+
+        <h3>Required Files</h3>
+        
+        <h4>package.json:</h4>
+        <pre>
+{
+  "name": "whatsapp-bot",
+  "version": "1.0.0",
+  "description": "WhatsApp Web Bot",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "whatsapp-web.js": "^1.19.4",
+    "qrcode": "^1.5.0",
+    "ws": "^8.13.0",
+    "express": "^4.18.2"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
+        </pre>
+
+        <h4>Updated server.js for Vercel deployment:</h4>
+        <pre>
+const express = require('express');
+const { Server } = require('ws');
+const { Client } = require('whatsapp-web.js');
+const cors = require('cors');
+
+const app = express();
+app.use(cors());
+
+let wss;
+
+// Handle regular HTTP requests
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'healthy' });
+});
+
+// Setup WebSocket when running in production
+if (process.env.NODE_ENV === 'production') {
+    const server = require('http').createServer(app);
+    wss = new Server({ server });
+    
+    wss.on('connection', handleConnection);
+    
+    const port = process.env.PORT || 3000;
+    server.listen(port, () => {
+        console.log(`Server is running on port ${port}`);
+    });
+} else {
+    // Development setup
+    const devServer = require('http').createServer(app);
+    wss = new Server({ server: devServer });
+    
+    wss.on('connection', handleConnection);
+    
+    devServer.listen(3000, () => {
+        console.log('Development server running on port 3000');
+    });
+}
+
+function handleConnection(ws) {
+    console.log('New client connected');
+    
+    const client = new Client({
+        puppeteer: {
+            headless: true,
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-accelerated-2d-canvas',
+                '--disable-gpu'
+            ]
+        }
+    });
+    
+    client.on('qr', (qr) => {
+        ws.send(JSON.stringify({
+            type: 'qr',
+            qr: qr
+        }));
+    });
+    
+    client.on('ready', () => {
+        ws.send(JSON.stringify({
+            type: 'ready'
+        }));
+    });
+    
+    client.on('message', (message) => {
+        ws.send(JSON.stringify({
+            type: 'message',
+            message: `${message.from}: ${message.body}`
+        }));
+    });
+    
+    client.initialize();
+    
+    ws.on('message', async (data) => {
+        const message = JSON.parse(data);
+        
+        if (message.type === 'send') {
+            try {
+                const chatId = message.phone.includes('@c.us') 
+                    ? message.phone 
+                    : `${message.phone}@c.us`;
+                    
+                await client.sendMessage(chatId, message.message);
+                
+                ws.send(JSON.stringify({
+                    type: 'message',
+                    message: `Sent to ${message.phone}: ${message.message}`
+                }));
+            } catch (error) {
+                console.error('Error sending message:', error);
+            }
+        }
+    });
+    
+    ws.on('close', () => {
+        client.destroy();
+        console.log('Client disconnected');
+    });
+}
+
+// Export for Vercel serverless deployment
+module.exports = app;
+        </pre>
+
+        <h3>Frontend WebSocket Connection Update:</h3>
+        <p>In your frontend JavaScript, update the WebSocket connection to use your Vercel deployment URL:</p>
+        <pre>
+// Replace with your Vercel deployment URL
+const wsUrl = 'wss://your-app-name.vercel.app';
+socket = new WebSocket(wsUrl);
+        </pre>
+
+        <h3>Deployment Steps:</h3>
+        <ol>
+            <li>Push your code to GitHub</li>
+            <li>Connect your repository to Vercel</li>
+            <li>Configure build settings:
+                <ul>
+                    <li>Build Command: npm install</li>
+                    <li>Output Directory: public (for frontend)</li>
+                    <li>Environment Variables: None required for basic setup</li>
+                </ul>
+            </li>
+            <li>Deploy and get your unique Vercel URL</li>
+            <li>Update the WebSocket URL in your frontend code</li>
+        </ol>
+
+        <h3>Notes:</h3>
+        <ul>
+            <li>Vercel's free tier includes serverless functions</li>
+            <li>WebSocket connections will be maintained as long as there's activity</li>
+            <li>Consider Vercel's Pro plan for production use with heavy traffic</li>
+            <li>QR code needs to be rescanned after function cold starts</li>
+        </ul>
+    </div>
+</div>
+
+<script>
+// This is the frontend code. The backend Node.js code will be provided separately
+let socket;
+let connected = false;
+
+function startBot() {
+    // Use production URL if on Vercel, localhost for development
+    const wsUrl = window.location.hostname === 'localhost' 
+        ? 'ws://localhost:3000'
+        : `wss://${window.location.hostname}`;
+    
+    socket = new WebSocket(wsUrl);
+    
+    socket.onopen = () => {
+        updateStatus('Connecting...');
+    };
+    
+    socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        
+        switch(data.type) {
+            case 'qr':
+                // Generate QR code
+                QRCode.toCanvas(document.getElementById('qrcode'), data.qr, {
+                    width: 200,
+                    margin: 1
+                });
+                break;
+                
+            case 'ready':
+                connected = true;
+                updateStatus('Connected');
+                document.getElementById('qrcode').style.display = 'none';
+                break;
+                
+            case 'message':
+                addMessageToLog(data.message);
+                break;
+                
+            case 'disconnected':
+                connected = false;
+                updateStatus('Disconnected');
+                document.getElementById('qrcode').style.display = 'block';
+                break;
+        }
+    };
+    
+    socket.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        updateStatus('Error connecting to server');
+    };
+}
+
+function stopBot() {
+    if (socket) {
+        socket.close();
+        connected = false;
+        updateStatus('Disconnected');
+    }
+}
+
+function sendMessage() {
+    if (!connected) {
+        alert('Please connect the bot first!');
+        return;
+    }
+    
+    const phone = document.getElementById('phone').value;
+    const message = document.getElementById('message').value;
+    
+    if (!phone || !message) {
+        alert('Please fill in all fields');
+        return;
+    }
+    
+    socket.send(JSON.stringify({
+        type: 'send',
+        phone: phone,
+        message: message
+    }));
+    
+    document.getElementById('message').value = '';
+}
+
+function updateStatus(status) {
+    document.getElementById('status').textContent = `Status: ${status}`;
+}
+
+function addMessageToLog(message) {
+    const chatLog = document.getElementById('chatLog');
+    const messageElement = document.createElement('div');
+    messageElement.className = 'message';
+    messageElement.textContent = message;
+    chatLog.appendChild(messageElement);
+    chatLog.scrollTop = chatLog.scrollHeight;
+}
+</script>
+
+</body></html>
